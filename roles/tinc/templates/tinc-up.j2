@@ -1,0 +1,7 @@
+#!/bin/sh
+#
+# Must use IP 
+#
+/sbin/ip link set $INTERFACE up
+/sbin/ip addr add  {{ vpn_ip }}/32 dev $INTERFACE
+/sbin/ip route add {{ vpn_subnet }} dev $INTERFACE

@@ -1,0 +1,17 @@
+[server]
+
+[server_pro]
+server01
+
+[server_start]
+server02
+server03
+
+[server:children]
+server_pro
+server_start
+
+[all:vars]
+vpn_name=vpn0
+vpn_subnet=172.16.1.0/29
+vpn_port=655

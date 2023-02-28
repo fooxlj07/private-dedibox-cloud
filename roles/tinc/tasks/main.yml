@@ -1,0 +1,93 @@
+---
+# This playbook will install tinc and add configuration fot tinc
+
+- name: Install Dependencies
+  apt:
+    name: "{{ item }}"
+    state: latest
+  with_items:
+    - "openssl"
+    - "zlib1g"
+    - "libncurses5-dev"
+    - "libncursesw5-dev"
+    - "libreadline-dev" 
+    - "libz-dev"
+    - "liblzo2-dev"
+    - "libssl-dev"
+    - "tinc"
+
+- name: Add tinc hosts folder in all hosts
+  file:
+    path: /etc/tinc/{{ vpn_name }}/hosts
+    state: directory
+    mode: '0755'
+  delegate_to: "{{ item }}"
+  loop: "{{ groups['server'] }}"
+ 
+- name: Add tinc host config 
+  template:
+    src: host.cfg.j2
+    dest: /etc/tinc/{{ vpn_name }}/hosts/{{ inventory_hostname }}
+   
+- name: Add ssh keys to tinc hosts 
+  shell: tincd -n {{ vpn_name }} -K4096
+
+- name: Wait for key generation
+  wait_for: 
+    timeout: 10
+
+- name: Add tinc-up script
+  template:
+    src: tinc-up.j2
+    dest: /etc/tinc/{{ vpn_name }}/tinc-up
+    mode: 0755
+
+- name: Add tinc-down script
+  template:
+    src: tinc-down.j2
+    dest: /etc/tinc/{{ vpn_name }}/tinc-down
+    mode: 0755
+
+- name: Add firewall rules for tcp
+  shell: |
+    iptables -I INPUT -p tcp -s {{ hostvars[item].ansible_host }} --dport {{ vpn_port }} -j ACCEPT
+    iptables -I OUTPUT -p tcp -d {{ hostvars[item].ansible_host }} --sport {{ vpn_port }} -j ACCEPT
+    iptables -I INPUT -p tcp -s {{ hostvars[item].vpn_ip }} -d {{ vpn_ip }} -j ACCEPT
+    iptables -I OUTPUT -p tcp -s {{ vpn_ip }} -d {{  hostvars[item].vpn_ip  }} -j ACCEPT
+  when: "item != inventory_hostname" 
+  loop: "{{ groups['server'] }}"
+
+- name: Add firewall rules for udp
+  shell: |
+    iptables -I INPUT -p udp -s {{ hostvars[item].ansible_host }} --dport {{ vpn_port }} -j ACCEPT
+    iptables -I OUTPUT -p udp -d {{ hostvars[item].ansible_host }} --sport {{ vpn_port }} -j ACCEPT
+    iptables -I INPUT -p udp -s {{ hostvars[item].vpn_ip }} -d {{ vpn_ip }} -j ACCEPT
+    iptables -I OUTPUT -p udp -s {{ vpn_ip }} -d {{  hostvars[item].vpn_ip  }} -j ACCEPT
+  when: "item != inventory_hostname" 
+  loop: "{{ groups['server'] }}"
+
+# TODO: need to waiting ssh keys public is copied to tinc hosts file
+- name: Fetch hosts config 
+  fetch: 
+    src: /etc/tinc/{{ vpn_name }}/hosts/{{ inventory_hostname }}
+    dest: buffer/{{ inventory_hostname }}-host-conf
+    flat: yes
+
+- name: Copy host config from current host to other hosts
+  copy: 
+    src: buffer/{{ inventory_hostname }}-host-conf
+    dest: /etc/tinc/{{ vpn_name }}/hosts/{{ inventory_hostname }}
+  delegate_to: "{{ item }}"
+  when: "item != inventory_hostname" 
+  loop: "{{ groups['server'] }}"
+
+- name: Add tinc config
+  template:
+    src: tinc.conf.j2
+    dest: /etc/tinc/{{ vpn_name }}/tinc.conf
+
+- name: Start tinc service
+  systemd:
+    name: tinc@{{ vpn_name }}
+    enabled: true
+    state: started

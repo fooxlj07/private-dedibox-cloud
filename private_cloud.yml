@@ -1,0 +1,22 @@
+---
+- name: Config tinc
+  hosts: all 
+  remote_user: root
+  serial: 1
+
+  roles: 
+    - tinc
+
+- name: Restart tinc service
+  hosts: all 
+  remote_user: root
+  serial: 1
+  
+  tasks:
+    - name: Restart all tinc service
+      systemd:
+        name: tinc@{{ vpn_name }}
+        state: restarted
+      delegate_to: "{{ item }}"
+      loop: "{{ groups['server'] }}"
+    

@@ -1,0 +1,7 @@
+#!/bin/sh
+#
+# Remove IP and routing. IP must be from /etc/tinc/vpn*/hosts/server*
+# 
+/sbin/ip route del {{ vpn_subnet }} dev $INTERFACE
+/sbin/ip addr del {{ vpn_ip }}/32 dev $INTERFACE
+/sbin/ip link set $INTERFACE down
