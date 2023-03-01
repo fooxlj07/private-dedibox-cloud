@@ -16,7 +16,15 @@
     - "libssl-dev"
     - "tinc"
 
+- name: Add tinc config
+  tags:
+    - conf
+  template:
+    src: tinc.conf.j2
+    dest: /etc/tinc/{{ vpn_name }}/tinc.conf
+
 - name: Add tinc hosts folder in all hosts
+  tags: conf
   file:
     path: /etc/tinc/{{ vpn_name }}/hosts
     state: directory
@@ -25,30 +33,32 @@
   loop: "{{ groups['server'] }}"
  
 - name: Add tinc host config 
+  tags: 
+    - conf
   template:
     src: host.cfg.j2
     dest: /etc/tinc/{{ vpn_name }}/hosts/{{ inventory_hostname }}
    
 - name: Add ssh keys to tinc hosts 
+  tags: conf
   shell: tincd -n {{ vpn_name }} -K4096
 
-- name: Wait for key generation
-  wait_for: 
-    timeout: 10
-
 - name: Add tinc-up script
+  tags: scripts
   template:
     src: tinc-up.j2
     dest: /etc/tinc/{{ vpn_name }}/tinc-up
     mode: 0755
 
 - name: Add tinc-down script
+  tags: scripts
   template:
     src: tinc-down.j2
     dest: /etc/tinc/{{ vpn_name }}/tinc-down
     mode: 0755
 
 - name: Add firewall rules for tcp
+  tags: network
   shell: |
     iptables -I INPUT -p tcp -s {{ hostvars[item].ansible_host }} --dport {{ vpn_port }} -j ACCEPT
     iptables -I OUTPUT -p tcp -d {{ hostvars[item].ansible_host }} --sport {{ vpn_port }} -j ACCEPT
@@ -58,6 +68,7 @@
   loop: "{{ groups['server'] }}"
 
 - name: Add firewall rules for udp
+  tags: network
   shell: |
     iptables -I INPUT -p udp -s {{ hostvars[item].ansible_host }} --dport {{ vpn_port }} -j ACCEPT
     iptables -I OUTPUT -p udp -d {{ hostvars[item].ansible_host }} --sport {{ vpn_port }} -j ACCEPT
@@ -66,14 +77,26 @@
   when: "item != inventory_hostname" 
   loop: "{{ groups['server'] }}"
 
+- name: Wait until public key is added to hosts
+  tags: conf
+  wait_for: 
+    path: /etc/tinc/{{ vpn_name }}/hosts/{{ inventory_hostname }}
+    search_regex: "PUBLIC KEY"
+    sleep: 5
+    timeout: 600
+
 # TODO: need to waiting ssh keys public is copied to tinc hosts file
 - name: Fetch hosts config 
+  tags: 
+    - conf
   fetch: 
     src: /etc/tinc/{{ vpn_name }}/hosts/{{ inventory_hostname }}
     dest: buffer/{{ inventory_hostname }}-host-conf
     flat: yes
 
 - name: Copy host config from current host to other hosts
+  tags: 
+    - conf
   copy: 
     src: buffer/{{ inventory_hostname }}-host-conf
     dest: /etc/tinc/{{ vpn_name }}/hosts/{{ inventory_hostname }}
@@ -81,12 +104,9 @@
   when: "item != inventory_hostname" 
   loop: "{{ groups['server'] }}"
 
-- name: Add tinc config
-  template:
-    src: tinc.conf.j2
-    dest: /etc/tinc/{{ vpn_name }}/tinc.conf
-
 - name: Start tinc service
+  tags:
+    - service
   systemd:
     name: tinc@{{ vpn_name }}
     enabled: true

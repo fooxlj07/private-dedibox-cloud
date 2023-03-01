@@ -8,6 +8,7 @@
     - tinc
 
 - name: Restart tinc service
+  tags: service
   hosts: all 
   remote_user: root
   serial: 1
