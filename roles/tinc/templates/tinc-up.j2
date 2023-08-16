@@ -1,7 +1,20 @@
 #!/bin/sh
-#
-# Must use IP 
-#
+
+# Attach the vpn interface to bridge interface
 /sbin/ip link set $INTERFACE up
-/sbin/ip addr add  {{ vpn_ip }}/32 dev $INTERFACE
-/sbin/ip route add {{ vpn_subnet }} dev $INTERFACE
+/sbin/brctl addif {{ bridge_iface }} $INTERFACE
+
+# Set a multicast route over bridge interface
+/sbin/route add -net 224.0.0.0 netmask 224.0.0.0 dev {{ bridge_iface }}
+
+# To allow VMs on a private IP to access internet (via vmbr0):
+/sbin/iptables -t nat -A POSTROUTING -o vmbr0 - J MASQUERADE
+
+# /sbin/ip addr add  {{ priv_ip }}/32 dev $INTERFACE
+# /sbin/ip route add {{ vpn_subnet }} dev $INTERFACE
+
+# To allow IP forwarding:
+echo 1 > /proc/sys/net/ipv4/ip_forward
+
+# To limit the chance of Corosync Totem re-transmission issues:
+echo 0 > /sys/devices/virtual/net/{{ bridge_iface }}/bridge/multicast_snooping

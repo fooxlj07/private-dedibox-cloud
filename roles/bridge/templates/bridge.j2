@@ -1,0 +1,8 @@
+auto {{ bridge_iface }}
+iface {{ bridge_iface }} inet static
+        address {{ priv_ip }}
+        netmask 255.255.255.0
+        bridge-ports none
+        bridge-stp off
+        bridge-fd 0
+{{ comment }}

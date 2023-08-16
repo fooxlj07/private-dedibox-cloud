@@ -10,103 +10,108 @@
     - "zlib1g"
     - "libncurses5-dev"
     - "libncursesw5-dev"
-    - "libreadline-dev" 
+    - "libreadline-dev"
     - "libz-dev"
     - "liblzo2-dev"
     - "libssl-dev"
     - "tinc"
 
+- name: Clean up tinc folder
+  file:
+    path: /etc/tinc/{{ vpn_name }}
+    state: absent
+
+- name: Create tinc/vpn/hosts folder
+  file:
+    path: /etc/tinc/{{ vpn_name }}/hosts
+    state: directory
+    mode: '0755'
+
 - name: Add tinc config
-  tags:
-    - conf
   template:
     src: tinc.conf.j2
     dest: /etc/tinc/{{ vpn_name }}/tinc.conf
 
 - name: Add tinc hosts folder in all hosts
-  tags: conf
   file:
     path: /etc/tinc/{{ vpn_name }}/hosts
     state: directory
     mode: '0755'
   delegate_to: "{{ item }}"
   loop: "{{ groups['server'] }}"
- 
-- name: Add tinc host config 
-  tags: 
-    - conf
+
+- name: Add tinc host config
   template:
     src: host.cfg.j2
     dest: /etc/tinc/{{ vpn_name }}/hosts/{{ inventory_hostname }}
-   
-- name: Add ssh keys to tinc hosts 
-  tags: conf
-  shell: tincd -n {{ vpn_name }} -K4096
+
+- name: Add ssh keys to tinc hosts
+  command: tincd -n {{ vpn_name }} -K4096
 
 - name: Add tinc-up script
-  tags: scripts
   template:
     src: tinc-up.j2
     dest: /etc/tinc/{{ vpn_name }}/tinc-up
-    mode: 0755
+    mode: "0755"
 
 - name: Add tinc-down script
-  tags: scripts
   template:
     src: tinc-down.j2
     dest: /etc/tinc/{{ vpn_name }}/tinc-down
-    mode: 0755
+    mode: "0755"
 
-- name: Add firewall rules for tcp
-  tags: network
-  shell: |
-    iptables -I INPUT -p tcp -s {{ hostvars[item].ansible_host }} --dport {{ vpn_port }} -j ACCEPT
-    iptables -I OUTPUT -p tcp -d {{ hostvars[item].ansible_host }} --sport {{ vpn_port }} -j ACCEPT
-    iptables -I INPUT -p tcp -s {{ hostvars[item].vpn_ip }} -d {{ vpn_ip }} -j ACCEPT
-    iptables -I OUTPUT -p tcp -s {{ vpn_ip }} -d {{  hostvars[item].vpn_ip  }} -j ACCEPT
-  when: "item != inventory_hostname" 
-  loop: "{{ groups['server'] }}"
+# - name: Flash firewall rules
+#   shell: |
+#     iptables -F
+#     iptables -X
 
-- name: Add firewall rules for udp
-  tags: network
-  shell: |
-    iptables -I INPUT -p udp -s {{ hostvars[item].ansible_host }} --dport {{ vpn_port }} -j ACCEPT
-    iptables -I OUTPUT -p udp -d {{ hostvars[item].ansible_host }} --sport {{ vpn_port }} -j ACCEPT
-    iptables -I INPUT -p udp -s {{ hostvars[item].vpn_ip }} -d {{ vpn_ip }} -j ACCEPT
-    iptables -I OUTPUT -p udp -s {{ vpn_ip }} -d {{  hostvars[item].vpn_ip  }} -j ACCEPT
-  when: "item != inventory_hostname" 
-  loop: "{{ groups['server'] }}"
+# - name: Add firewall rules for tcp
+#   shell: |
+#     iptables -I INPUT -p tcp -s {{ hostvars[item].ansible_host }} --dport {{ vpn_port }} -j ACCEPT
+#     iptables -I OUTPUT -p tcp -d {{ hostvars[item].ansible_host }} --sport {{ vpn_port }} -j ACCEPT
+#     iptables -I INPUT -p tcp -s {{ hostvars[item].priv_ip }} -d {{ priv_ip }} -j ACCEPT
+#     iptables -I OUTPUT -p tcp -s {{ priv_ip }} -d {{  hostvars[item].priv_ip  }} -j ACCEPT
+#   when: "item != inventory_hostname"
+#   loop: "{{ groups['server'] }}"
+
+# - name: Add firewall rules for udp
+#   shell: |
+#     iptables -I INPUT -p udp -s {{ hostvars[item].ansible_host }} --dport {{ vpn_port }} -j ACCEPT
+#     iptables -I OUTPUT -p udp -d {{ hostvars[item].ansible_host }} --sport {{ vpn_port }} -j ACCEPT
+#     iptables -I INPUT -p udp -s {{ hostvars[item].priv_ip }} -d {{ priv_ip }} -j ACCEPT
+#     iptables -I OUTPUT -p udp -s {{ priv_ip }} -d {{  hostvars[item].priv_ip  }} -j ACCEPT
+#   when: "item != inventory_hostname"
+#   loop: "{{ groups['server'] }}"
 
 - name: Wait until public key is added to hosts
-  tags: conf
-  wait_for: 
+  wait_for:
     path: /etc/tinc/{{ vpn_name }}/hosts/{{ inventory_hostname }}
     search_regex: "PUBLIC KEY"
     sleep: 5
     timeout: 600
 
-# TODO: need to waiting ssh keys public is copied to tinc hosts file
-- name: Fetch hosts config 
-  tags: 
-    - conf
-  fetch: 
+- name: Fetch hosts config
+  fetch:
     src: /etc/tinc/{{ vpn_name }}/hosts/{{ inventory_hostname }}
     dest: buffer/{{ inventory_hostname }}-host-conf
-    flat: yes
+    flat: true
 
 - name: Copy host config from current host to other hosts
-  tags: 
-    - conf
-  copy: 
+  copy:
     src: buffer/{{ inventory_hostname }}-host-conf
     dest: /etc/tinc/{{ vpn_name }}/hosts/{{ inventory_hostname }}
   delegate_to: "{{ item }}"
-  when: "item != inventory_hostname" 
+  when: "item != inventory_hostname"
   loop: "{{ groups['server'] }}"
 
+- name: When Tinc starts, the contents in the vpn interface sub-directory should be loaded
+  lineinfile:
+    dest: /etc/tinc/nets.boot
+    line: "{{ vpn_name }}"
+    state: present
+    insertafter: EOF
+
 - name: Start tinc service
-  tags:
-    - service
   systemd:
     name: tinc@{{ vpn_name }}
     enabled: true

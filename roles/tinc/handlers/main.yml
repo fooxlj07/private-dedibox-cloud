@@ -1,4 +1,6 @@
-- name: restart_tinc
-  service: 
+---
+
+- name: Restart_tinc
+  systemd:
     name: tinc@{{ vpn_name }}
     state: restarted
