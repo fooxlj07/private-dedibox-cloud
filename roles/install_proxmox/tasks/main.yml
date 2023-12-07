@@ -1,0 +1,13 @@
+---
+
+- name: Preconfig
+  import_tasks: pre_config.yml
+  tags: pre_config
+
+- name: Install proxmox from debian 
+  import_tasks: install.yml
+  tags: apt_install
+
+- name: Postconfig 
+  import_tasks: post_config.yml
+  tags: post_config

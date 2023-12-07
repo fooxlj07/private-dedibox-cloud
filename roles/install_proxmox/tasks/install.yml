@@ -1,0 +1,30 @@
+---
+
+- name: Apt update & full-upgrade
+  apt:
+    update_cache: yes
+    upgrade: full
+
+- name: Apt install proxmox ve kernel
+  apt:
+    name: proxmox-default-kernel
+    state: latest
+
+- name: Reboot the machine
+  reboot:
+
+- name: Check if ssh is available
+  wait_for:
+    port: 22
+    host: "{{ ansible_host }}"
+    delay: 20
+ 
+- name: Install proxmox ve packages
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+  apt:
+    pkg:
+    - proxmox-ve
+    - postfix
+    - open-iscsi
+    - chrony

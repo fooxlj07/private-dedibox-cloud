@@ -1,0 +1,50 @@
+---
+
+- name: Get a list of installed packages matching a pattern
+  command: dpkg-query -W -f='${Package}\n' 'linux-image-6.1*'
+  register: installed_packages
+
+- name: Remove Linux kernel packages
+  apt:
+    name: "{{ item }}"
+    state: absent
+  loop: "{{ installed_packages.stdout_lines }}"
+  when: installed_packages.stdout_lines | length > 0
+
+- name: Remove debian kernel
+  apt:
+    name: "{{ item }}"
+    state: absent
+  with_items:
+    - "linux-image-amd64"
+    - "os-prober"
+
+- name: update-grub
+  command: update-grub
+
+- name: Add nftables table
+  command: nft add table inet filter
+  ignore_errors: yes  # Ignore errors if the table already exists
+
+- name: Add nftables chain
+  command: nft add chain inet filter input { type filter hook input priority 0 \; }
+  ignore_errors: yes  # Ignore errors if the chain already exists
+
+- name: Check nfttables rule exist 
+  command: nft -a list ruleset
+  register: nft_list_result
+
+- name: Add nftables rule for TCP port 8006
+  command: nft add rule inet filter input tcp dport 8006 accept
+  when: "'tcp dport 8006 accept' not in  nft_list_result.stdout_lines"
+
+- name: Set first user(root) password
+  user: 
+    name: root
+    password: "{{ root_password | password_hash('sha512') }}"
+
+- name: Remove entreprise source list
+  tags: no-subscription
+  file:
+    path: /etc/apt/sources.list.d/pve-enterprise.list
+    state: absent

@@ -1,0 +1,8 @@
+---
+
+vpn_name: vpn
+vpn_subnet: 172.16.1.0/28
+vpn_port: 655
+
+cluster_name: groot
+bridge_iface: vmbr0

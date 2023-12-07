@@ -1,0 +1,20 @@
+- name: Set hostname
+  hostname: 
+    name: "{{ inventory_hostname }}"
+
+- name: Update /etc/hosts for 
+  lineinfile:
+    path: /etc/hosts
+    regexp: '^127.0.1.1'
+    line: "{{ ansible_host }} {{ inventory_hostname }}.proxmox.com {{ inventory_hostname }}"
+
+- name: Add proxmox ve sources list
+  lineinfile:
+    path: /etc/apt/sources.list.d/pve-install-repo.list
+    line: "deb [arch=amd64] http://download.proxmox.com/debian/pve bookworm pve-no-subscription"
+    create: yes
+
+- name: Add proxmox ve apt key
+  apt_key:
+    url: "https://enterprise.proxmox.com/debian/proxmox-release-bookworm.gpg"
+    state: present
