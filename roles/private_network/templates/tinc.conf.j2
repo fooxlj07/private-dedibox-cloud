@@ -1,0 +1,7 @@
+Name = {{ inventory_hostname }}
+Device = /dev/net/tun
+AddressFamily = ipv4
+Mode = switch
+{% for host in groups['server'] if host != inventory_hostname %}
+ConnectTo = {{ host }}
+{%  endfor %}

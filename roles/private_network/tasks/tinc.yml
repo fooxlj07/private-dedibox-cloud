@@ -1,0 +1,99 @@
+---
+
+- name: Add nftables for nat
+  command: nft add table ip nat
+  ignore_errors: yes
+
+- name: Add nftables chain 
+  command: nft add chain ip nat postrouting { type nat hook postrouting priority 0 \; }
+  ignore_errors: yes
+
+- name: Install dependencies
+  apt:
+    pkg: 
+      - "openssl"
+      - "zlib1g"
+      - "libncurses5-dev"
+      - "libncursesw5-dev"
+      - "libreadline-dev"
+      - "libz-dev"
+      - "liblzo2-dev"
+      - "libssl-dev"
+      - "tinc"
+
+- name: Create tinc/vpn/hosts folder
+  file:
+    path: /etc/tinc/{{ vpn_name }}/hosts
+    state: directory
+    mode: '0755'
+  delegate_to: "{{ item }}"
+  loop: "{{ groups['server'] }}"
+
+- name: Add tinc config
+  template:
+    src: tinc.conf.j2
+    dest: /etc/tinc/{{ vpn_name }}/tinc.conf
+
+- name: Create tinc hosts folder
+  file:
+    path: /etc/tinc/{{ vpn_name }}/hosts
+    state: directory
+    mode: '0755'
+  delegate_to: "{{ item }}"
+  loop: "{{ groups['server'] }}"
+
+- name: Add tinc host config
+  template:
+    src: host.cfg.j2
+    dest: /etc/tinc/{{ vpn_name }}/hosts/{{ inventory_hostname }}
+
+- name: Add ssh keys to tinc hosts
+  command: tincd -n {{ vpn_name }} -K4096
+
+- name: Add tinc-up script
+  template:
+    src: tinc-up.j2
+    dest: /etc/tinc/{{ vpn_name }}/tinc-up
+    mode: "0755"
+
+- name: Add tinc-down script
+  template:
+    src: tinc-down.j2
+    dest: /etc/tinc/{{ vpn_name }}/tinc-down
+    mode: "0755"
+
+- name: Wait until public key is added to hosts
+  wait_for:
+    path: /etc/tinc/{{ vpn_name }}/hosts/{{ inventory_hostname }}
+    search_regex: "PUBLIC KEY"
+    sleep: 5
+    timeout: 600
+
+- name: Fetch hosts config
+  fetch:
+    src: /etc/tinc/{{ vpn_name }}/hosts/{{ inventory_hostname }}
+    dest: buffer/{{ inventory_hostname }}
+    flat: true
+
+- name: Copy host config from current host to other hosts
+  copy:
+    src: buffer/{{ inventory_hostname }}
+    dest: /etc/tinc/{{ vpn_name }}/hosts/
+  delegate_to: "{{ item }}"
+  when: inventory_hostname != item
+  loop: "{{ groups['server'] }}"
+
+- name: Force proxmox using private ip first than public ip
+  lineinfile: 
+    path: /etc/host.conf
+    line: "order hosts, bind"
+    insertbefore: BOF
+
+- name: Add private ip of all servers
+  blockinfile:
+    path: /etc/hosts
+    block: |
+      {% for item in groups['server'] %}
+      {{ hostvars[item]['priv_ip'] }} {{ item }}.proxmox.com {{ item }}
+      {% endfor %}
+  loop: "{{ groups['server'] }}"

@@ -1,4 +1,1 @@
 ---
-roles: 
-  - name: nftables
-    src: https://github.com/ipr-cnrs/nftables.git

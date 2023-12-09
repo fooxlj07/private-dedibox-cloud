@@ -1,0 +1,7 @@
+#vpn
+auto {{ bridge_iface }}
+iface {{ bridge_iface }} inet static
+    address {{ priv_ip }}/24
+	bridge-ports none
+	bridge-stp off
+	bridge-fd 0

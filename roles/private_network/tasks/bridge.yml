@@ -1,0 +1,15 @@
+---
+
+# For proxmox use
+- name: Install Dependencies
+  apt:
+    name: "ifupdown2"
+    state: latest
+
+- name: Create bridge interface file
+  template: 
+    src: interface.j2
+    dest: /etc/network/interfaces.d/{{ bridge_iface }}
+
+- name: Apply brige interface file
+  command: ifreload -a

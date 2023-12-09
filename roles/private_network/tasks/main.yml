@@ -1,0 +1,20 @@
+---
+- name: Create bridge
+  import_tasks: bridge.yml
+  tags: bridge
+
+- name: Setup private network with tinc
+  import_tasks: tinc.yml
+  tags: tinc
+
+# Restart tinc service after all servers have tinc setup
+- name: Restart tinc service
+  tags: 
+    - tinc
+  ansible.builtin.systemd:
+    name: tinc@{{ vpn_name }}
+    enabled: yes
+    state: restarted
+  when: "inventory_hostname == 'server03'"
+  delegate_to: "{{ item }}"
+  loop: "{{ groups['server'] }}"

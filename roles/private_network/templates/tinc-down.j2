@@ -1,0 +1,23 @@
+#!/bin/sh
+#
+# Remove IP and routing. IP must be from /etc/tinc/{{ vpn_name }}/hosts/server*
+# 
+#!/bin/bash
+/sbin/ip route del 224.0.0.0/4 dev {{ bridge_iface }}
+/sbin/brctl delif {{ bridge_iface }} {{ vpn_name }}
+/sbin/ip link set {{ vpn_name }} down
+
+# Find the nftable rule which is added during tinc@vpn up
+handle=$(nft -a list ruleset | grep 'oifname "vmbr0" masquerade' | awk '{print $NF}')
+if [ -n "$handle" ]; then
+    echo "Found rule with handle: $handle"
+    
+    # Delete the rule using the handle
+    nft delete rule ip nat postrouting handle $handle
+    
+    echo "Rule deleted successfully."
+else
+    echo "Rule not found."
+fi
+
+echo 0 > /proc/sys/net/ipv4/ip_forward

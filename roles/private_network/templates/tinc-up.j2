@@ -1,0 +1,11 @@
+#!/bin/sh
+
+# Attach the {{ vpn_name }} interface to bridge interface
+/sbin/ip link set dev {{ vpn_name }} up
+/sbin/brctl addif {{ bridge_iface }} {{ vpn_name }}
+
+# Set a multicast route over bridge interface
+/sbin/ip route add 224.0.0.0/4 dev {{ bridge_iface }}
+
+# To allow VMs on a private IP to access internet (via vmbr0):
+nft add rule ip nat postrouting oifname "{{ bridge_iface }}" masquerade
