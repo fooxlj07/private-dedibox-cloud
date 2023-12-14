@@ -8,4 +8,3 @@
   roles: 
     - role: install_proxmox
       tags: install
-  

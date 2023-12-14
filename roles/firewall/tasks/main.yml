@@ -1,0 +1,54 @@
+--- 
+
+- name: Make sure /etc/nftables.d exists
+  file:
+    path: /etc/nftables.d 
+    state: directory
+    mode: '0755'
+
+- name: Use curl to get public IP of localhost
+  shell: "curl ifconfig.me"
+  delegate_to: localhost
+  become: true
+  register: localhost_public_ip_result
+
+- name: Get Public IP by Hostname
+  set_fact:
+    public_ip_addresses: "{{ public_ip_addresses | default([]) + [lookup('community.general.dig', item)] }}"
+  when: inventory_hostname != item
+  with_items: "{{ groups['server'] }}"
+
+- name: Set local_public_ip fact
+  set_fact:
+    local_public_ip: "{{ localhost_public_ip_result.stdout }}"
+
+- name: Add input-chain.nft
+  template: 
+    src: input_chain.j2
+    dest: /etc/nftables.d/input-chain.nft
+    force: true
+    mode: '0644'
+
+- name: Add output-chain.nft
+  template: 
+    src: output_chain.j2
+    dest: /etc/nftables.d/output-chain.nft
+    force: true
+    mode: '0644'
+
+- name: Add ip-nat.nft
+  copy: 
+    src: ip_nat.nft
+    dest: /etc/nftables.d/ip-nat.nft
+    force: true
+    mode: '0644'
+
+- name: Replace current nftables.conf
+  copy:
+    src: nftables.conf
+    dest: /etc/nftables.conf
+    force: true
+    mode: '0644'
+
+- name: Apply new nftables rules
+  command: 'nft -f /etc/nftables.conf'

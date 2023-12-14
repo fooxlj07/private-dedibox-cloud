@@ -1,2 +1,4 @@
 buffer
 vault-pass
+inventory.ini
+ansible_collections

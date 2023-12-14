@@ -13,7 +13,7 @@ if [ -n "$handle" ]; then
     echo "Found rule with handle: $handle"
     
     # Delete the rule using the handle
-    nft delete rule ip nat postrouting handle $handle
+    nft delete rule inet nat postrouting handle $handle
     
     echo "Rule deleted successfully."
 else

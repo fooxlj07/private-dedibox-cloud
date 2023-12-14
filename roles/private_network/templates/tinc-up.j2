@@ -8,4 +8,4 @@
 /sbin/ip route add 224.0.0.0/4 dev {{ bridge_iface }}
 
 # To allow VMs on a private IP to access internet (via vmbr0):
-nft add rule ip nat postrouting oifname "{{ bridge_iface }}" masquerade
+nft add rule inet nat postrouting oifname "{{ bridge_iface }}" masquerade

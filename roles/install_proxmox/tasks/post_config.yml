@@ -22,22 +22,6 @@
 - name: update-grub
   command: update-grub
 
-- name: Add nftables table
-  command: nft add table ip filter
-  ignore_errors: yes  # Ignore errors if the table already exists
-
-- name: Add nftables chain
-  command: nft add chain ip filter input { type filter hook input priority 0 \; }
-  ignore_errors: yes  # Ignore errors if the chain already exists
-
-- name: Check nfttables rule exist 
-  command: nft -a list ruleset
-  register: nft_list_result
-
-- name: Add nftables rule for TCP port 8006
-  command: nft add rule ip filter input tcp dport 8006 accept
-  when: "'tcp dport 8006 accept' not in nft_list_result.stdout_lines"
-
 - name: Set first user(root) password
   user: 
     name: root

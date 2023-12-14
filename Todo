@@ -1,0 +1,9 @@
+Create proxmox cluster.
+Setup ceph.
+Config+ corosync + ceph
+
+
+Setup https, dns.
+Install kub.
+
+Add public ip of the other two hosts into input_chain, output_chain

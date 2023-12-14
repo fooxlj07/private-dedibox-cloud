@@ -1,9 +1,0 @@
-nft add table inet filter
-nft add chain inet filter input { type filter hook input priority 0 \; }
-nft add rule inet filter input tcp dport 8006 accept
-systemctl restart pveproxy
-systemctl restart pvedaemon
-systemctl restart pvestatd
-
-
-passwd root

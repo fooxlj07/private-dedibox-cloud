@@ -1,0 +1,8 @@
+# /etc/nftables.d/ip-nat.nft
+
+# Define the inet nat 
+table inet nat {
+	chain postrouting {
+		type nat hook postrouting priority filter; policy accept;
+	}
+}

@@ -1,0 +1,10 @@
+# /etc/nftables.d/output-chain.nft
+
+# Define the output chain 
+table inet filter {
+    chain output {
+        {% for host in groups['server'] if host != inventory_hostname %}
+            ip saddr {{ hostvars[host]['priv_ip'] }} accept
+        {%  endfor %}
+    }
+}

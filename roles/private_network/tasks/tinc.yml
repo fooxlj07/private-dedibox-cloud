@@ -1,13 +1,5 @@
 ---
 
-- name: Add nftables for nat
-  command: nft add table ip nat
-  ignore_errors: yes
-
-- name: Add nftables chain 
-  command: nft add chain ip nat postrouting { type nat hook postrouting priority 0 \; }
-  ignore_errors: yes
-
 - name: Install dependencies
   apt:
     pkg: 
@@ -51,12 +43,14 @@
   command: tincd -n {{ vpn_name }} -K4096
 
 - name: Add tinc-up script
+  tags: script
   template:
     src: tinc-up.j2
     dest: /etc/tinc/{{ vpn_name }}/tinc-up
     mode: "0755"
 
 - name: Add tinc-down script
+  tags: script
   template:
     src: tinc-down.j2
     dest: /etc/tinc/{{ vpn_name }}/tinc-down

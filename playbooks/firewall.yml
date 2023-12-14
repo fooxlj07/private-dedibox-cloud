@@ -1,0 +1,8 @@
+---
+
+- name: Config firewall
+  hosts: all
+  become: true
+  roles:
+    - role: firewall
+      tags: firewall
