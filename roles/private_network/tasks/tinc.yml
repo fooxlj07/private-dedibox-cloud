@@ -91,3 +91,9 @@
       {{ hostvars[item]['priv_ip'] }} {{ item }}.proxmox.com {{ item }}
       {% endfor %}
   loop: "{{ groups['server'] }}"
+
+- name: Update /etc/hosts for 
+  lineinfile:
+    path: /etc/hosts
+    insertafter: EOF
+    line: "{{ ansible_host }} {{ inventory_hostname }}.proxmox.com {{ inventory_hostname }} pvelocalhost"

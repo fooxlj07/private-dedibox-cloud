@@ -28,7 +28,26 @@
     password: "{{ root_password | password_hash('sha512') }}"
 
 - name: Remove entreprise source list
-  tags: no-subscription
   file:
     path: /etc/apt/sources.list.d/pve-enterprise.list
     state: absent
+
+- name: Allow named to create dgram/stream socket
+  tags: apparmor
+  block:
+    - name: Set named service config
+      copy: 
+        dest: /etc/apparmor.d/local/usr.sbin.named
+        content: |
+          network unix dgram,
+          network unix stream,
+
+    - name: Reload apparmor service
+      systemd_service:
+        name: apparmor
+        state: reloaded
+
+    - name: Restart apparmor service
+      systemd_service:
+        name: apparmor
+        state: started

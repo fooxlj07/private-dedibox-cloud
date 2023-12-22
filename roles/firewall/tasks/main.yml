@@ -52,3 +52,8 @@
 
 - name: Apply new nftables rules
   command: 'nft -f /etc/nftables.conf'
+
+- name: Restart tinc
+  systemd:
+    name: tinc@{{ vpn_name }}
+    state: restarted

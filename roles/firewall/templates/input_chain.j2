@@ -26,5 +26,8 @@ table inet filter {
     {% for host in public_ip_addresses %}
         ip saddr {{ host }} accept
     {%  endfor %}
+        icmp type echo-request accept
+        ip saddr {{ vpn_subnet }} udp dport 5404 accept
+        ip saddr {{ vpn_subnet }} udp dport 5405 accept
     }
 }

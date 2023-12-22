@@ -6,5 +6,6 @@ table inet filter {
         {% for host in groups['server'] if host != inventory_hostname %}
             ip saddr {{ hostvars[host]['priv_ip'] }} accept
         {%  endfor %}
+            icmp type echo-request accept
     }
 }

@@ -1,7 +1,9 @@
 Set /etc/hosts local
+```
 <ip_server01> server01
 <ip_server02> server02
 <ip_server03> server03
+```
 
 # Set up env
 pipenv install
@@ -24,7 +26,9 @@ ansible-playbook --tags post_config proxmox.yml
 ```
 
 ## Check if it is proper installed 
-ssh in the server check if proxmox is properly installed, and to check the poxmox.
+- Create a root user
+- ssh in the server check if proxmox is properly installed. 
+- then add ip rules, check web ui
 ```
 nft add rule inet filter input tcp dport 8006 accept
 ```

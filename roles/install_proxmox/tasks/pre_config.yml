@@ -2,12 +2,6 @@
   hostname: 
     name: "{{ inventory_hostname }}"
 
-- name: Update /etc/hosts for 
-  lineinfile:
-    path: /etc/hosts
-    regexp: '^127.0.1.1'
-    line: "{{ ansible_host }} {{ inventory_hostname }}.proxmox.com {{ inventory_hostname }}"
-
 - name: Add proxmox ve sources list
   lineinfile:
     path: /etc/apt/sources.list.d/pve-install-repo.list
