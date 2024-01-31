@@ -19,6 +19,13 @@
     host: "{{ ansible_host }}"
     delay: 20
  
+# Fix ansible_host is server0* 
+- name: Update /etc/hosts
+  lineinfile:
+    path: /etc/hosts
+    search_string: '127.0.1.1'
+    line: "{{ ansible_host }} {{ inventory_hostname }}.proxmox.com {{ inventory_hostname }} pvelocalhost"
+
 - name: Install proxmox ve packages
   environment:
     DEBIAN_FRONTEND: noninteractive

@@ -54,7 +54,7 @@ pyrsistent = "==0.19.3"
 python-dateutil = "==2.8.2"
 python-slugify = "==8.0.1"
 pyyaml = "==6.0"
-requests = "==2.28.2"
+requests = "*"
 resolvelib = "==0.8.1"
 rich = "==13.3.3"
 "ruamel.yaml" = "==0.17.21"
@@ -70,6 +70,7 @@ wcmatch = "==8.4.1"
 websocket-client = "==1.5.1"
 yamllint = "==1.30.0"
 dnspython = "*"
+proxmoxer = "*"
 
 [dev-packages]
 

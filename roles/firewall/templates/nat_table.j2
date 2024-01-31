@@ -4,5 +4,6 @@
 table inet nat {
 	chain postrouting {
 		type nat hook postrouting priority filter; policy accept;
+		oifname "{{ iface_pub }}" masquerade
 	}
 }

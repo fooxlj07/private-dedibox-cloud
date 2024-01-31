@@ -4,6 +4,6 @@
   hosts: all
   become: true
   serial: 1
-
+  roles:
     - role: private_network
       tags: private_network 
